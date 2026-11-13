@@ -1,0 +1,1304 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#eef2f7">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🌱</text></svg>">
+<title>健康生活管理 · 云同步 v0.2B</title>
+<style>
+  :root{
+    --bg:#eef2f7;
+    --card:#ffffff;
+    --ink:#16223a;
+    --muted:#8a97ab;
+    --line:#e9eef6;
+    --blue:#2f80ff;
+    --blue-deep:#1f6dff;
+    --blue-soft:#eaf2ff;
+    --shadow:0 6px 20px rgba(30,60,110,.07), 0 1px 3px rgba(30,60,110,.05);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;
+    font-size:15px;
+    line-height:1.45;
+    -webkit-text-size-adjust:100%;
+  }
+  .app{
+    max-width:480px;
+    margin:0 auto;
+    padding:14px 14px calc(28px + env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .card{
+    background:var(--card);
+    border-radius:18px;
+    box-shadow:var(--shadow);
+    padding:16px;
+  }
+  h1,h2,h3{margin:0;font-weight:700}
+  /* ---------- 顶部身份 ---------- */
+  .topbar{
+    display:flex;align-items:center;gap:12px;
+    background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+    border-radius:18px;box-shadow:var(--shadow);
+    padding:14px 16px;
+  }
+  .avatar{
+    width:48px;height:48px;flex:0 0 48px;border-radius:50%;
+    background:radial-gradient(circle at 32% 28%,#e8f4ff,#d6e9ff);
+    display:flex;align-items:center;justify-content:center;
+    font-size:25px;line-height:1;
+    box-shadow:inset 0 0 0 1px rgba(47,128,255,.14);
+  }
+  .ident{min-width:0;flex:1}
+  .brand{font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.06em}
+  .name-row{display:flex;align-items:center;gap:8px;min-width:0}
+  .nickname{
+    font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    max-width:160px;
+  }
+  .edit-btn{
+    flex:0 0 auto;border:1px solid #d6e5ff;background:var(--blue-soft);color:var(--blue-deep);
+    font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;cursor:pointer;
+    font-family:inherit;
+  }
+  .edit-btn:active{transform:scale(.96)}
+  .editor{display:none;gap:8px;margin-top:8px;align-items:center}
+  .editor.on{display:flex}
+  .editor input{
+    flex:1;min-width:0;font-family:inherit;font-size:15px;color:var(--ink);
+    border:1px solid #d9e3f2;background:#f8fbff;border-radius:12px;padding:9px 12px;outline:none;
+  }
+  .editor input:focus{border-color:var(--blue);background:#fff}
+  .btn-mini{
+    font-family:inherit;font-size:13px;font-weight:600;border-radius:12px;padding:9px 14px;
+    border:1px solid transparent;background:var(--blue);color:#fff;cursor:pointer;
+  }
+  .btn-mini.ghost{background:#f1f5fb;color:#5b6b83;border-color:#e3eaf5}
+  .btn-mini:active{opacity:.85}
+
+  /* ---------- 通用区块头 ---------- */
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+  .sec-head h2{font-size:16px}
+  .sec-head .hint-txt{font-size:12px;color:var(--muted)}
+
+  /* ---------- 饮水 ---------- */
+  .water-main{display:flex;align-items:center;gap:16px}
+  .ring-wrap{position:relative;width:118px;height:118px;flex:0 0 118px}
+  .ring{width:118px;height:118px;transform:rotate(-90deg);display:block}
+  .ring-bg{fill:none;stroke:#e9f0fb;stroke-width:11}
+  .ring-fg{
+    fill:none;stroke:url(#wg);stroke-width:11;stroke-linecap:round;
+    transition:stroke-dashoffset .45s cubic-bezier(.2,.8,.3,1);
+  }
+  .ring-center{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;pointer-events:none;
+  }
+  .ring-center span{font-size:22px;font-weight:800;color:var(--blue-deep);letter-spacing:-.02em}
+  .ring-center small{font-size:10px;color:var(--muted);margin-top:-2px}
+  .water-stats{flex:1;min-width:0}
+  .water-total{font-size:32px;font-weight:800;color:var(--blue-deep);line-height:1.05;letter-spacing:-.02em}
+  .water-total small{font-size:14px;font-weight:600;color:var(--blue);margin-left:3px}
+  .water-meta{margin-top:4px;font-size:12.5px;color:var(--muted)}
+  .water-left{margin-top:2px;font-size:13px;color:#5b6b83}
+  .water-left b{color:var(--blue-deep);font-weight:700}
+  .btn-water{
+    width:100%;margin-top:14px;border:0;border-radius:14px;padding:14px;
+    background:linear-gradient(135deg,#4a97ff,#1f6dff);color:#fff;
+    font-family:inherit;font-size:16px;font-weight:700;letter-spacing:.02em;
+    box-shadow:0 8px 18px rgba(31,109,255,.26);cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn-water:active{transform:scale(.985);box-shadow:0 4px 10px rgba(31,109,255,.22)}
+
+  /* ---------- 记录列表 ---------- */
+  .rec-list{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .rec-list:empty{display:none}
+  .rec{display:flex;align-items:center;gap:10px;background:#f8fafd;border-radius:11px;padding:9px 10px}
+  .rec .t{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 44px}
+  .rec .v{flex:1;min-width:0;font-size:13.5px;color:#33415a}
+  .rec .v b{font-weight:700;color:var(--ink)}
+  .rec .del{
+    flex:0 0 26px;width:26px;height:26px;border-radius:50%;border:0;
+    background:#eef2f8;color:#93a1b8;font-size:16px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0 0 1px;
+  }
+  .rec .del:active{background:#ffe2e2;color:#e04848}
+  .empty{font-size:13px;color:#a8b4c6;text-align:center;padding:14px 0 6px}
+
+  /* ---------- 运动 ---------- */
+  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin:0 -2px 4px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:0 0 auto;display:flex;align-items:center;gap:5px;
+    border:1px solid var(--line);background:#fbfcfe;color:#5b6b83;
+    font-family:inherit;font-size:13px;font-weight:600;
+    padding:8px 10px;border-radius:999px;cursor:pointer;transition:.16s;
+  }
+  .chip i{width:8px;height:8px;border-radius:50%;display:block}
+  .chip[aria-selected="true"]{color:#fff;border-color:transparent;box-shadow:0 6px 14px rgba(30,60,110,.16)}
+  .chip[aria-selected="true"] i{background:#fff}
+
+  .ex-form{display:flex;gap:8px;margin-top:10px;align-items:flex-end}
+  .field{flex:1;min-width:0;display:none}
+  .field.on{display:block}
+  .field label{display:block;font-size:11.5px;color:var(--muted);margin:0 0 4px 3px}
+  .field input{
+    width:100%;font-family:inherit;font-size:16px;color:var(--ink);
+    border:1px solid #e0e8f4;background:#f8fbff;border-radius:12px;padding:10px 12px;outline:none;
+    font-variant-numeric:tabular-nums;
+  }
+  .field input:focus{border-color:var(--blue);background:#fff}
+  .btn-add{
+    flex:0 0 auto;border:0;border-radius:12px;padding:11px 16px;
+    background:#12233d;color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;
+  }
+  .btn-add:active{opacity:.85}
+
+  .ex-group{margin-top:14px;border-radius:14px;padding:12px 12px 10px;background:#fbfcfe;border:1px solid #eef2f8}
+  .ex-ghead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ex-ghead i{width:9px;height:9px;border-radius:50%;display:block;flex:0 0 9px}
+  .ex-ghead b{font-size:14px}
+  .ex-gtot{font-size:12.5px;color:#5b6b83;margin-left:auto;text-align:right}
+  .ex-gtot b{color:var(--ink);font-weight:700}
+  .ex-pace{font-size:12px;color:var(--muted);margin-top:4px;padding-left:17px}
+  .ex-pace b{color:#2f6bd6}
+
+  /* ---------- 分享卡 ---------- */
+  .btn-primary{
+    width:100%;border:0;border-radius:14px;padding:13px;
+    background:linear-gradient(135deg,#4a97ff,#1f6dff);color:#fff;
+    font-family:inherit;font-size:15.5px;font-weight:700;cursor:pointer;
+    box-shadow:0 8px 18px rgba(31,109,255,.22);
+  }
+  .btn-primary:active{transform:scale(.99)}
+  #cardBox[hidden]{display:none}
+  #cardBox{margin-top:12px}
+  #cardImg{width:100%;display:block;border-radius:16px;box-shadow:0 10px 26px rgba(30,60,110,.13)}
+  .share-actions{display:flex;align-items:center;gap:10px;margin-top:12px}
+  .share-actions .btn-primary{flex:1;width:auto}
+  .share-hint{font-size:11.5px;color:var(--muted);line-height:1.3;flex:0 0 auto;max-width:110px}
+  .toast{
+    position:fixed;left:50%;bottom:32px;transform:translate(-50%,10px);
+    background:rgba(18,35,61,.92);color:#fff;font-size:13px;padding:10px 18px;border-radius:999px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:99;backdrop-filter:blur(6px);
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  /* ---------- 日期选择 ---------- */
+  .datebar{
+    background:var(--card);border-radius:18px;box-shadow:var(--shadow);
+    padding:12px 14px;display:flex;flex-direction:column;gap:7px;
+  }
+  .datebar .row{display:flex;align-items:center;gap:7px}
+  .datebar .lbl{font-size:12px;color:var(--muted);flex:0 0 auto;padding-right:2px}
+  .datebar input[type="date"]{
+    flex:1;min-width:0;font-family:inherit;font-size:15px;color:var(--ink);
+    border:1px solid #dfe8f4;background:#f8fbff;border-radius:12px;
+    padding:8px 10px;outline:none;text-align:center;
+  }
+  .datebar input[type="date"]:focus{border-color:var(--blue);background:#fff}
+  .stepbtn{
+    flex:0 0 auto;width:34px;height:36px;border-radius:11px;border:1px solid #e3eaf5;
+    background:#f4f8ff;color:#4a7fc1;font-size:20px;font-weight:700;font-family:inherit;
+    cursor:pointer;line-height:1;padding:0 0 2px;
+  }
+  .stepbtn:active{background:#e8f1ff}
+  .stepbtn[disabled]{opacity:.35}
+  .todaybtn{
+    flex:0 0 auto;border:1px solid #d6e5ff;background:var(--blue-soft);color:var(--blue-deep);
+    font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 12px;border-radius:11px;cursor:pointer;
+  }
+  .todaybtn[disabled]{opacity:.4}
+  .datehint{font-size:11.5px;color:#8a97ab;padding-left:2px}
+  .datehint.on{color:#c2751a}
+
+  /* ---------- v0.2B：版本标记 / 说明条 / 同步状态 ---------- */
+  .badge-ver{
+    display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;
+    background:#eaf2ff;color:#1f6dff;font-size:10px;font-weight:700;letter-spacing:.03em;
+    vertical-align:middle;
+  }
+  .notice{
+    background:#fff8e6;border:1px solid #ffe3a8;border-radius:14px;
+    padding:10px 12px;font-size:12px;line-height:1.5;color:#8a6114;
+    display:flex;gap:8px;align-items:flex-start;
+  }
+  .notice b{font-weight:700;color:#8a6114}
+  .syncbar{
+    display:flex;align-items:center;gap:8px;background:var(--card);
+    border-radius:14px;box-shadow:var(--shadow);padding:10px 12px;
+  }
+  .sync-dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;background:#c3d0e2}
+  .sync-dot.ok{background:#22b573}
+  .sync-dot.busy{background:#2f80ff;animation:pulse 1s infinite}
+  .sync-dot.err{background:#e04848}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .sync-text{flex:1;min-width:0;font-size:12.5px;color:#5b6b83;line-height:1.35}
+  .sync-text.err{color:#c0392b}
+  .sync-text .sub{display:block;font-size:11px;color:#98a5b8;margin-top:1px}
+  .refreshbtn{
+    flex:0 0 auto;border:1px solid #d6e5ff;background:var(--blue-soft);color:var(--blue-deep);
+    font-family:inherit;font-size:12.5px;font-weight:700;padding:8px 12px;border-radius:11px;cursor:pointer;
+  }
+  .refreshbtn:active{background:#dfebff}
+  .refreshbtn[disabled]{opacity:.45}
+  .rec.pending{background:#fff6e8}
+
+  footer.page-foot{text-align:center;font-size:11px;color:#aab6c8;padding:4px 0 8px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 顶部身份 -->
+  <header class="topbar">
+    <div class="avatar" aria-hidden="true">🌱</div>
+    <div class="ident">
+      <div class="brand">健康生活管理<span class="badge-ver">v0.2B 云同步</span></div>
+      <div class="name-row">
+        <span class="nickname" id="nickName">健康记录员</span>
+        <button class="edit-btn" id="editBtn" type="button">✎ 编辑昵称</button>
+      </div>
+      <div class="editor" id="editor">
+        <input id="nameInput" type="text" maxlength="12" placeholder="输入昵称" autocomplete="off">
+        <button class="btn-mini" id="saveName" type="button">保存</button>
+        <button class="btn-mini ghost" id="cancelName" type="button">取消</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 练习版本说明 -->
+  <div class="notice">
+    <span>⚠️</span>
+    <span><b>练习版本</b>：暂时没有登录功能，请勿录入真实健康信息或分享链接</span>
+  </div>
+
+  <!-- 云同步状态 -->
+  <section class="syncbar">
+    <span class="sync-dot" id="syncDot"></span>
+    <span class="sync-text" id="syncText">正在连接云服务…</span>
+    <button class="refreshbtn" id="refreshBtn" type="button">刷新记录</button>
+  </section>
+
+  <!-- 日期选择：查看历史 / 补记 -->
+  <section class="datebar">
+    <div class="row">
+      <span class="lbl">日期</span>
+      <button class="stepbtn" id="prevDay" type="button" aria-label="前一天">‹</button>
+      <input type="date" id="dayPicker" aria-label="选择查看或补记的日期">
+      <button class="stepbtn" id="nextDay" type="button" aria-label="后一天">›</button>
+      <button class="todaybtn" id="backToday" type="button">今天</button>
+    </div>
+    <div class="datehint" id="dayHint"></div>
+  </section>
+
+  <!-- 饮水 -->
+  <section class="card">
+    <div class="sec-head">
+      <h2 id="waterHead">今日饮水</h2>
+      <span class="hint-txt" id="todayLabel"></span>
+    </div>
+    <div class="water-main">
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="wg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#6fb4ff"/>
+              <stop offset="100%" stop-color="#1f6dff"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="60" cy="60" r="52"/>
+          <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="326.73"/>
+        </svg>
+        <div class="ring-center">
+          <span id="ringPct">0%</span>
+          <small>目标完成</small>
+        </div>
+      </div>
+      <div class="water-stats">
+        <div class="water-total"><span id="waterTotal">0</span><small>毫升</small></div>
+        <div class="water-meta">目标 2000 毫升 · 每杯 250 毫升</div>
+        <div class="water-left" id="waterLeftBox">还差 <b id="waterLeft">2000</b> 毫升</div>
+      </div>
+    </div>
+    <button class="btn-water" id="addWater" type="button">💧 喝一杯，记录 250 毫升</button>
+    <ul class="rec-list" id="waterList"></ul>
+  </section>
+
+  <!-- 运动 -->
+  <section class="card">
+    <div class="sec-head">
+      <h2 id="exHead">今日运动</h2>
+      <span class="hint-txt">选择项目后记录</span>
+    </div>
+    <div class="chips" id="chips" role="tablist"></div>
+    <div class="ex-form">
+      <div class="field" id="fKm"><label>公里数</label><input id="inKm" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field on" id="fMin"><label>分钟</label><input id="inMin" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div>
+      <button class="btn-add" id="addEx" type="button">保存记录</button>
+    </div>
+    <div id="exSummary"></div>
+  </section>
+
+  <!-- 今日记录卡 -->
+  <section class="card">
+    <div class="sec-head">
+      <h2 id="cardHead">今日记录卡</h2>
+      <span class="hint-txt">可保存为图片</span>
+    </div>
+    <button class="btn-primary" id="makeCard" type="button">生成今日记录卡</button>
+    <div id="cardBox" hidden>
+      <img id="cardImg" alt="今日记录卡">
+      <div class="share-actions">
+        <button class="btn-primary" id="saveCard" type="button">保存图片</button>
+        <span class="share-hint">手机可在图片上长按保存</span>
+      </div>
+    </div>
+  </section>
+
+  <footer class="page-foot">健康生活管理 · 健康记录 · 数据保存在本机浏览器</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var GOAL = 2000;
+  var CUP = 250;
+  var KEY = "health_cloud_v1";          // v0.2B 独立缓存键，与 v0.2A 的 health_daily_v1 互不影响
+  var CIRC = 2 * Math.PI * 52;
+
+  // 云服务配置。provider="supabase" 用 Supabase 免费版；provider="rest" 指向本机 /sync 测试服务。
+  var CLOUD = {
+    provider: "supabase",
+    url: "https://lneuvenbqksfpgffrvow.supabase.co",
+    key: "sb_publishable_6pJDDfRaqQ1Yy6a6NaQEog_gtNqYmrM",
+    table: "health_sync",
+    base: "/sync",
+    room: "v02b-default",
+    timeout: 12000
+  };
+
+  var TYPES = [
+    {id:"run",     name:"跑步", color:"#ff6b6b", soft:"#ffeceb", dist:true },
+    {id:"walk",    name:"散步", color:"#2fbf71", soft:"#e9f9f1", dist:true },
+    {id:"bike",    name:"骑行", color:"#f5a524", soft:"#fff5e2", dist:true },
+    {id:"stretch", name:"拉伸", color:"#8b5cf6", soft:"#f2ecff", dist:false},
+    {id:"yoga",    name:"瑜伽", color:"#06b6d4", soft:"#e4f9fd", dist:false}
+  ];
+  function typeOf(id){
+    for (var i=0;i<TYPES.length;i++){ if (TYPES[i].id===id) return TYPES[i]; }
+    return TYPES[0];
+  }
+
+  /* ---------------- 状态：本地缓存 + 云端文档 ---------------- */
+  function defaults(){
+    return { nickname:"健康记录员", nicknameUpdatedAt:0, water:[], ex:[],
+             tomb:{water:[], ex:[]}, rev:0, updatedAt:0, pending:false };
+  }
+  var state = load();
+
+  function normTomb(t){
+    t = (t && typeof t==="object") ? t : {};
+    return { water: Array.isArray(t.water)?t.water:[], ex: Array.isArray(t.ex)?t.ex:[] };
+  }
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return defaults();
+      var d = JSON.parse(raw);
+      if(!d || typeof d!=="object") return defaults();
+      return {
+        nickname: (typeof d.nickname==="string" && d.nickname.trim()) ? d.nickname.trim().slice(0,12) : "健康记录员",
+        nicknameUpdatedAt: Number(d.nicknameUpdatedAt)||0,
+        water: Array.isArray(d.water) ? d.water.filter(function(w){ return w && w.id && w.ts && typeof w.ml==="number"; }) : [],
+        ex:    Array.isArray(d.ex)    ? d.ex.filter(function(e){ return e && e.id && e.ts && e.type; }) : [],
+        tomb: normTomb(d.tomb),
+        rev: Number(d.rev)||0,
+        updatedAt: Number(d.updatedAt)||0,
+        pending: !!d.pending
+      };
+    }catch(err){ return defaults(); }
+  }
+  function cacheLocal(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(err){}
+  }
+
+  /* ---------------- 合并规则（并集 + 删除墓碑，重试不会重复记） ---------------- */
+  function mergeDocs(a, b){
+    a = a || {}; b = b || {};
+    var out = defaults();
+
+    var aT = Number(a.nicknameUpdatedAt)||0, bT = Number(b.nicknameUpdatedAt)||0;
+    if(bT > aT){ out.nickname = (b.nickname||"").trim().slice(0,12) || "健康记录员"; out.nicknameUpdatedAt = bT; }
+    else       { out.nickname = (a.nickname||"").trim().slice(0,12) || "健康记录员"; out.nicknameUpdatedAt = aT; }
+
+    var tomb = { water:{}, ex:{} };
+    function addTomb(kind, list){
+      (list||[]).forEach(function(t){
+        if(!t || !t.id) return;
+        var ts = Number(t.ts)||0;
+        if(tomb[kind][t.id] === undefined || ts > tomb[kind][t.id]) tomb[kind][t.id] = ts;
+      });
+    }
+    addTomb("water", (a.tomb||{}).water); addTomb("water", (b.tomb||{}).water);
+    addTomb("ex",    (a.tomb||{}).ex);    addTomb("ex",    (b.tomb||{}).ex);
+
+    function union(kind, listA, listB){
+      var map = {};
+      (listA||[]).concat(listB||[]).forEach(function(rec){
+        if(!rec || !rec.id) return;
+        var prev = map[rec.id];
+        if(!prev || (Number(rec.updatedAt)||0) >= (Number(prev.updatedAt)||0)) map[rec.id] = rec;
+      });
+      return Object.keys(map)
+        .filter(function(id){ return tomb[kind][id] === undefined; })
+        .map(function(id){ return map[id]; })
+        .sort(function(x,y){ return x.ts - y.ts; });
+    }
+    out.water = union("water", a.water, b.water);
+    out.ex    = union("ex",    a.ex,    b.ex);
+    out.tomb  = {
+      water: Object.keys(tomb.water).map(function(id){ return {id:id, ts:tomb.water[id]}; }),
+      ex:    Object.keys(tomb.ex).map(function(id){ return {id:id, ts:tomb.ex[id]}; })
+    };
+    out.updatedAt = Math.max(Number(a.updatedAt)||0, Number(b.updatedAt)||0);
+    out.rev = Math.max(Number(a.rev)||0, Number(b.rev)||0);
+    return out;
+  }
+  function docOf(s){
+    return { nickname:s.nickname, nicknameUpdatedAt:s.nicknameUpdatedAt,
+             water:s.water, ex:s.ex, tomb:s.tomb, updatedAt:s.updatedAt };
+  }
+
+  /* ---------------- 云同步：读 / 写 / 重试 ---------------- */
+  var pushing = false;
+  var elSyncDot = document.getElementById("syncDot");
+  var elSyncText = document.getElementById("syncText");
+  var elRefresh = document.getElementById("refreshBtn");
+
+  function setSync(kind, text){
+    if(elSyncDot)  elSyncDot.className = "sync-dot" + (kind==="ok"?" ok":kind==="err"?" err":kind==="busy"?" busy":"");
+    if(elSyncText){ elSyncText.className = "sync-text" + (kind==="err"?" err":""); elSyncText.textContent = text; }
+  }
+  function syncUrl(){
+    return CLOUD.base + (CLOUD.base.indexOf("?")>=0?"&":"?") + "room=" + encodeURIComponent(CLOUD.room);
+  }
+  function apiOk(){
+    if(CLOUD.provider === "supabase") return !!(CLOUD.url && CLOUD.key && CLOUD.table);
+    if(CLOUD.provider === "rest") return !!CLOUD.base;
+    return false;
+  }
+
+  function sbHeaders(extra){
+    var h = { "apikey": CLOUD.key, "Authorization": "Bearer " + CLOUD.key };
+    if(extra) for(var k in extra) h[k] = extra[k];
+    return h;
+  }
+  async function sbRequest(method, path, headers, body){
+    var ctl = new AbortController(), tm = setTimeout(function(){ ctl.abort(); }, CLOUD.timeout);
+    try{
+      return await fetch(CLOUD.url + path, {
+        method: method, cache: "no-store", signal: ctl.signal,
+        headers: sbHeaders(headers), body: body
+      });
+    } finally { clearTimeout(tm); }
+  }
+  function sbErrorText(status, payload){
+    if(status === 401 || status === 403) return "云服务拒绝访问（密钥或权限不对）";
+    if(status === 404) return "云端数据表 " + CLOUD.table + " 不存在，请先建表";
+    if(payload && payload.message) return payload.message;
+    return "HTTP " + status;
+  }
+
+  async function apiGet(){
+    if(CLOUD.provider === "supabase"){
+      var r = await sbRequest("GET", "/rest/v1/" + CLOUD.table +
+        "?select=rev,doc&room=eq." + encodeURIComponent(CLOUD.room));
+      if(!r.ok){
+        var p = null; try { p = await r.json(); } catch(e){}
+        throw new Error(sbErrorText(r.status, p));
+      }
+      var rows = await r.json();
+      if(!rows || !rows.length) return { rev:0, doc:null };
+      return { rev: Number(rows[0].rev)||0, doc: rows[0].doc || null };
+    }
+    var ctl = new AbortController(), tm = setTimeout(function(){ ctl.abort(); }, CLOUD.timeout);
+    try{
+      var r2 = await fetch(syncUrl() + "&_=" + Date.now(), { cache:"no-store", signal:ctl.signal });
+      if(!r2.ok) throw new Error("读取云端失败 HTTP " + r2.status);
+      var j = await r2.json();
+      return { rev: Number(j.rev)||0, doc: j.doc||null };
+    } finally { clearTimeout(tm); }
+  }
+
+  async function apiPut(rev, doc){
+    if(CLOUD.provider === "supabase"){
+      var nowIso = new Date().toISOString();
+      if(rev === 0){
+        // 首次写入：插入一行；若已存在（别人抢先建了）→ 冲突，让上层重新合并
+        var r = await sbRequest("POST", "/rest/v1/" + CLOUD.table,
+          { "Content-Type":"application/json", "Prefer":"return=representation" },
+          JSON.stringify([{ room: CLOUD.room, rev: 1, doc: doc, updated_at: nowIso }]));
+        if(r.status === 409) return { conflict:true };
+        if(!r.ok){
+          var p = null; try { p = await r.json(); } catch(e){}
+          throw new Error(sbErrorText(r.status, p));
+        }
+        return { conflict:false, rev:1 };
+      }
+      // 条件更新：只有 rev 还是我读到的那个值才写得进去（原子 CAS）
+      var path = "/rest/v1/" + CLOUD.table +
+        "?room=eq." + encodeURIComponent(CLOUD.room) + "&rev=eq." + rev;
+      var r2 = await sbRequest("PATCH", path,
+        { "Content-Type":"application/json", "Prefer":"return=representation" },
+        JSON.stringify({ rev: rev + 1, doc: doc, updated_at: nowIso }));
+      if(!r2.ok){
+        var p2 = null; try { p2 = await r2.json(); } catch(e){}
+        throw new Error(sbErrorText(r2.status, p2));
+      }
+      var rows = await r2.json();
+      if(!rows || !rows.length) return { conflict:true };   // 别人先写了
+      return { conflict:false, rev: rev + 1 };
+    }
+
+    var ctl = new AbortController(), tm = setTimeout(function(){ ctl.abort(); }, CLOUD.timeout);
+    try{
+      var r3 = await fetch(syncUrl(), {
+        method:"PUT", cache:"no-store", signal:ctl.signal,
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ rev: rev, doc: doc })
+      });
+      if(r3.status === 409) return { conflict:true };
+      if(!r3.ok) throw new Error("写入云端失败 HTTP " + r3.status);
+      var j2 = await r3.json();
+      return { conflict:false, rev: Number(j2.rev)||rev+1 };
+    } finally { clearTimeout(tm); }
+  }
+
+  function friendlyErr(err){
+    var m = (err && err.message) || "";
+    if(err && err.name === "AbortError") return "请求超时";
+    if(/failed to fetch|networkerror|load failed/i.test(m)) return "无法连接云服务（网络中断或服务不可用）";
+    return m || "网络异常";
+  }
+
+  async function push(){
+    if(pushing) return false;
+    if(!apiOk()){ setSync("err","云服务未配置：记录只保存在本机"); return false; }
+    pushing = true;
+    try{
+      for(var i=0;i<3;i++){
+        var remote = await apiGet();
+        var merged = mergeDocs(state, remote.doc);
+        merged.rev = remote.rev;
+        var res = await apiPut(remote.rev, docOf(merged));
+        if(res.conflict) continue;           // 别人刚写过，重新合并再来一次
+        merged.rev = res.rev;
+        merged.pending = false;
+        state = merged;
+        cacheLocal();
+        renderAll(); if(cardVisible()) renderCard();
+        setSync("ok", "已同步到云端 · " + hhmm(Date.now()));
+        return true;
+      }
+      throw new Error("云端版本冲突，重试 3 次仍未保存");
+    }catch(err){
+      state.pending = true;
+      cacheLocal();
+      renderAll();
+      setSync("err", "保存失败：" + friendlyErr(err) + "。记录已留在本机，点「刷新记录」可重试");
+      return false;
+    }finally{
+      pushing = false;
+    }
+  }
+
+  async function pull(showBusy){
+    if(!apiOk()){ setSync("err","云服务未配置：当前只显示本机缓存"); return false; }
+    if(showBusy) setSync("busy","正在刷新记录…");
+    if(elRefresh) elRefresh.disabled = true;
+    try{
+      var remote = await apiGet();
+      var hadPending = state.pending;
+      var merged = mergeDocs(state, remote.doc);
+      merged.rev = remote.rev;
+      merged.pending = hadPending;
+      state = merged;
+      cacheLocal();
+      renderAll(); if(cardVisible()) renderCard();
+      setSync("ok", "已刷新 · " + hhmm(Date.now()) + (hadPending ? "（本机还有未保存到云端的改动）" : ""));
+      return true;
+    }catch(err){
+      setSync("err", "刷新失败：" + friendlyErr(err) + "。当前显示本机缓存");
+      return false;
+    }finally{
+      if(elRefresh) elRefresh.disabled = false;
+    }
+  }
+
+  // 所有增删改统一走这里：先落本地，再上云；上云结果决定提示文案
+  function commit(msgOk){
+    state.updatedAt = Date.now();
+    state.pending = true;
+    cacheLocal();
+    renderAll(); if(cardVisible()) renderCard();
+    setSync("busy","正在保存到云端…");
+    return push().then(function(ok){
+      if(ok) toast(msgOk);
+      else toast("保存失败，记录暂存在本机，点「刷新记录」重试");
+      return ok;
+    });
+  }
+
+  if(elRefresh){
+    elRefresh.addEventListener("click", async function(){
+      var ok = await pull(true);
+      if(ok && state.pending){
+        var saved = await push();
+        if(saved) toast("已重新保存到云端");
+      }
+      else if(ok){ toast("已刷新到最新记录"); }
+    });
+  }
+
+  /* ---------------- 时间工具（日期统一按北京时间 UTC+8 划分） ---------------- */
+  var BJ = 8 * 3600 * 1000;
+  var WEEK = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+
+  function pad2(n){ return n<10 ? "0"+n : ""+n; }
+  function bjParts(ts){
+    var d = new Date(ts + BJ);
+    return { y:d.getUTCFullYear(), m:d.getUTCMonth()+1, d:d.getUTCDate(),
+             h:d.getUTCHours(), mi:d.getUTCMinutes(), wd:d.getUTCDay() };
+  }
+  function dayKey(ts){ var p = bjParts(ts); return p.y+"-"+pad2(p.m)+"-"+pad2(p.d); }
+  function todayKey(){ return dayKey(Date.now()); }
+  function hhmm(ts){ var p = bjParts(ts); return pad2(p.h)+":"+pad2(p.mi); }
+  function shortDay(key){ var p = key.split("-"); return (+p[1])+"月"+(+p[2])+"日"; }
+  function weekdayOf(key){
+    var p = key.split("-");
+    return WEEK[new Date(Date.UTC(+p[0], +p[1]-1, +p[2])).getUTCDay()];
+  }
+  function prettyDay(key){
+    return (+key.split("-")[0])+"年"+(+key.split("-")[1])+"月"+(+key.split("-")[2])+"日 "+weekdayOf(key);
+  }
+  function shiftDay(key, delta){
+    var p = key.split("-");
+    var d = new Date(Date.UTC(+p[0], +p[1]-1, +p[2]) + delta*86400000);
+    return d.getUTCFullYear()+"-"+pad2(d.getUTCMonth()+1)+"-"+pad2(d.getUTCDate());
+  }
+  // 把「选中日期」与「现在的北京时间时分」拼成时间戳：补记在过去的记录，时间显示为填写时刻
+  function tsForDay(key, baseTs){
+    var now = bjParts(baseTs || Date.now());
+    var p = key.split("-");
+    return Date.UTC(+p[0], +p[1]-1, +p[2], now.h, now.mi, 0) - BJ;
+  }
+  function uid(){
+    return Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  }
+
+  /* ---------------- 格式化 ---------------- */
+  function trimNum(n, digits){
+    var s = Number(n).toFixed(digits==null?2:digits);
+    return s.replace(/\.?0+$/,"") || "0";
+  }
+  function fmtKm(n){ return trimNum(n,2); }
+  function fmtMin(n){
+    var r = Math.round(n*10)/10;
+    return (r % 1 === 0) ? String(r) : r.toFixed(1);
+  }
+  function fmtPace(km, min){
+    if(!km || km<=0 || !min || min<=0) return "--";
+    var p = min/km;
+    var m = Math.floor(p);
+    var s = Math.round((p-m)*60);
+    if(s===60){ m+=1; s=0; }
+    return m+"'"+(s<10?"0":"")+s+"\"";
+  }
+
+  /* ---------------- 按日取数 ---------------- */
+  function recDay(rec){ return rec.day || dayKey(rec.ts); }   // 旧记录没有 day 字段，按原时间归日
+  function waterOf(day){
+    return state.water.filter(function(w){ return recDay(w)===day; })
+                      .sort(function(a,b){ return a.ts-b.ts; });
+  }
+  function exOf(day){
+    return state.ex.filter(function(e){ return recDay(e)===day; })
+                    .sort(function(a,b){ return a.ts-b.ts; });
+  }
+  function groupEx(day){
+    var list = exOf(day);
+    var out = [];
+    TYPES.forEach(function(t){
+      var items = list.filter(function(e){ return e.type===t.id; });
+      if(!items.length) return;
+      var km=0, min=0;
+      items.forEach(function(e){ km += Number(e.km)||0; min += Number(e.min)||0; });
+      out.push({type:t.id, name:t.name, color:t.color, dist:t.dist, items:items, km:km, min:min});
+    });
+    return out;
+  }
+
+  /* ---------------- 当前查看 / 补记的日期 ---------------- */
+  var viewDay = todayKey();   // 默认今天
+  var pinned  = false;        // 用户是否手动选了过去某一天
+  function isTodayView(){ return viewDay === todayKey(); }
+
+  /* ---------------- 渲染：顶部身份 ---------------- */
+  var elNick   = document.getElementById("nickName");
+  var elEdit   = document.getElementById("editBtn");
+  var elEditor = document.getElementById("editor");
+  var elInput  = document.getElementById("nameInput");
+
+  function renderNick(){
+    elNick.textContent = state.nickname;
+    document.title = state.nickname+" · 健康生活管理";
+  }
+  elEdit.addEventListener("click", function(){
+    elEditor.classList.add("on");
+    elInput.value = state.nickname;
+    elInput.focus();
+    elInput.select();
+  });
+  document.getElementById("cancelName").addEventListener("click", function(){
+    elEditor.classList.remove("on");
+  });
+  document.getElementById("saveName").addEventListener("click", commitName);
+  elInput.addEventListener("keydown", function(e){
+    if(e.key==="Enter"){ e.preventDefault(); commitName(); }
+  });
+  function commitName(){
+    var v = elInput.value.trim().slice(0,12);
+    if(!v){ toast("昵称不能为空"); return; }
+    state.nickname = v;
+    state.nicknameUpdatedAt = Date.now();
+    renderNick();
+    elEditor.classList.remove("on");
+    commit("昵称已保存到云端");
+  }
+
+  /* ---------------- 渲染：饮水 ---------------- */
+  var elWaterTotal = document.getElementById("waterTotal");
+  var elWaterLeft  = document.getElementById("waterLeftBox");
+  var elRingPct    = document.getElementById("ringPct");
+  var elRingFg     = document.getElementById("ringFg");
+  var elWaterList  = document.getElementById("waterList");
+  var elToday      = document.getElementById("todayLabel");
+
+  function renderWater(){
+    var list = waterOf(viewDay);
+    var total = list.reduce(function(s,w){ return s + (Number(w.ml)||0); }, 0);
+    var ratio = Math.min(1, total / GOAL);
+    var pct = GOAL>0 ? Math.round(total / GOAL * 100) : 0;
+
+    elWaterTotal.textContent = total;
+    elRingPct.textContent = pct + "%";
+    elRingFg.setAttribute("stroke-dasharray", CIRC.toFixed(2));
+    elRingFg.setAttribute("stroke-dashoffset", (CIRC * (1-ratio)).toFixed(2));
+
+    var left = Math.max(0, GOAL - total);
+    if(left === 0){
+      elWaterLeft.innerHTML = total>GOAL
+        ? "目标已达成 · 超出 <b>"+(total-GOAL)+"</b> 毫升 🎉"
+        : "目标已达成 🎉 "+(isTodayView() ? "今日达标" : "当日达标");
+    }else{
+      elWaterLeft.innerHTML = "还差 <b>"+left+"</b> 毫升";
+    }
+
+    elWaterList.innerHTML = "";
+    if(!list.length){
+      var empty = document.createElement("li");
+      empty.className = "empty";
+      empty.textContent = "暂无记录";
+      elWaterList.appendChild(empty);
+      return;
+    }
+    list.forEach(function(w){
+      var li = document.createElement("li");
+      li.className = "rec";
+      li.innerHTML = '<span class="t">'+hhmm(w.ts)+'</span>'+
+                     '<span class="v">饮水 <b>+'+ (Number(w.ml)||0) +'</b> 毫升</span>'+
+                     '<button class="del" type="button" aria-label="撤销">×</button>';
+      li.querySelector(".del").addEventListener("click", function(){
+        state.water = state.water.filter(function(x){ return x.id!==w.id; });
+        state.tomb.water.push({id:w.id, ts:Date.now()});
+        commit("已撤销一条饮水记录并同步到云端");
+      });
+      elWaterList.appendChild(li);
+    });
+  }
+
+  document.getElementById("addWater").addEventListener("click", function(){
+    if(!pinned) viewDay = todayKey();
+    state.water.push({id:uid(), ts:tsForDay(viewDay), day:viewDay, ml:CUP, updatedAt:Date.now()});
+    commit(isTodayView() ? "已保存到云端 · 饮水 +250 毫升" : ("已保存到云端 · 记入 "+shortDay(viewDay)));
+  });
+
+  /* ---------------- 渲染：运动 ---------------- */
+  var active = "run";
+  var elChips   = document.getElementById("chips");
+  var elFkm     = document.getElementById("fKm");
+  var elFmin    = document.getElementById("fMin");
+  var elInKm    = document.getElementById("inKm");
+  var elInMin   = document.getElementById("inMin");
+  var elSummary = document.getElementById("exSummary");
+
+  function buildChips(){
+    elChips.innerHTML = "";
+    TYPES.forEach(function(t){
+      var b = document.createElement("button");
+      b.className = "chip";
+      b.type = "button";
+      b.setAttribute("role","tab");
+      b.dataset.id = t.id;
+      b.innerHTML = '<i></i>'+t.name;
+      b.addEventListener("click", function(){ setActive(t.id); });
+      elChips.appendChild(b);
+    });
+  }
+  function setActive(id){
+    active = id;
+    var t = typeOf(id);
+    Array.prototype.forEach.call(elChips.children, function(c){
+      var isOn = c.dataset.id===id;
+      c.setAttribute("aria-selected", isOn ? "true" : "false");
+      c.style.background = isOn ? t.color : "";
+      c.style.borderColor = isOn ? t.color : "";
+    });
+    elFkm.classList.toggle("on", !!t.dist);
+    elFmin.classList.toggle("on", true);
+  }
+
+  function renderEx(){
+    var groups = groupEx(viewDay);
+    elSummary.innerHTML = "";
+    if(!groups.length){
+      var p = document.createElement("div");
+      p.className = "empty";
+      p.textContent = isTodayView() ? "今日暂无运动记录" : "暂无记录";
+      elSummary.appendChild(p);
+      return;
+    }
+    groups.forEach(function(g){
+      var box = document.createElement("div");
+      box.className = "ex-group";
+
+      var head = document.createElement("div");
+      head.className = "ex-ghead";
+      var totText = g.dist
+        ? "共 <b>"+fmtKm(g.km)+"</b> 公里 · <b>"+fmtMin(g.min)+"</b> 分钟"
+        : "共 <b>"+fmtMin(g.min)+"</b> 分钟";
+      head.innerHTML = '<i style="background:'+g.color+'"></i><b>'+g.name+'</b>'+
+                       '<span class="ex-gtot">'+totText+'</span>';
+      box.appendChild(head);
+
+      if(g.type === "run"){
+        var pace = document.createElement("div");
+        pace.className = "ex-pace";
+        pace.innerHTML = (isTodayView() ? '今日平均配速 ' : '当日平均配速 ') + '<b>'+fmtPace(g.km, g.min)+'/公里</b>';
+        box.appendChild(pace);
+      }
+
+      var ul = document.createElement("ul");
+      ul.className = "rec-list";
+      g.items.forEach(function(e){
+        var li = document.createElement("li");
+        li.className = "rec";
+        var detail;
+        if(g.dist){
+          detail = '<b>'+fmtKm(e.km)+'</b> 公里 · <b>'+fmtMin(e.min)+'</b> 分钟';
+          if(g.type==="run") detail += ' · 配速 '+fmtPace(Number(e.km), Number(e.min));
+        }else{
+          detail = '<b>'+fmtMin(e.min)+'</b> 分钟';
+        }
+        li.innerHTML = '<span class="t">'+hhmm(e.ts)+'</span>'+
+                       '<span class="v">'+detail+'</span>'+
+                       '<button class="del" type="button" aria-label="撤销">×</button>';
+        li.querySelector(".del").addEventListener("click", function(){
+          state.ex = state.ex.filter(function(x){ return x.id!==e.id; });
+          state.tomb.ex.push({id:e.id, ts:Date.now()});
+          commit("已撤销一条"+g.name+"记录并同步到云端");
+        });
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+      elSummary.appendChild(box);
+    });
+  }
+
+  document.getElementById("addEx").addEventListener("click", function(){
+    var t = typeOf(active);
+    var min = parseFloat(elInMin.value);
+    var km  = t.dist ? parseFloat(elInKm.value) : 0;
+    if(!isFinite(min) || min <= 0){ toast("请填写有效的分钟数"); elInMin.focus(); return; }
+    if(t.dist && (!isFinite(km) || km <= 0)){ toast("请填写有效的公里数"); elInKm.focus(); return; }
+    if(!pinned) viewDay = todayKey();
+    state.ex.push({
+      id: uid(), ts: tsForDay(viewDay), day: viewDay, type: t.id,
+      km: t.dist ? Math.round(km*100)/100 : 0,
+      min: Math.round(min*10)/10,
+      updatedAt: Date.now()
+    });
+    elInMin.value = ""; elInKm.value = "";
+    commit(isTodayView() ? ("已保存到云端 · "+t.name) : ("已保存到云端 · 记入 "+shortDay(viewDay)+" · "+t.name));
+  });
+
+  /* ---------------- 今日记录卡（Canvas 绘制，预览即 PNG） ---------------- */
+  var elCardBox = document.getElementById("cardBox");
+  var elCardImg = document.getElementById("cardImg");
+  var lastCardUrl = "";
+
+  function cardVisible(){ return !elCardBox.hidden; }
+
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+  function fitText(ctx, text, maxW){
+    if(ctx.measureText(text).width <= maxW) return text;
+    var s = text;
+    while(s.length>1 && ctx.measureText(s+"…").width > maxW){ s = s.slice(0,-1); }
+    return s+"…";
+  }
+
+  function drawCard(){
+    var S = 2;
+    var W = 360;
+    var pad = 14;
+    var left = 32;
+    var right = W - 32;
+
+    var water = waterOf(viewDay);
+    var waterTotal = water.reduce(function(s,w){ return s + (Number(w.ml)||0); }, 0);
+    var groups = groupEx(viewDay);
+    var cardToday = isTodayView();
+
+    // 高度计算
+    var headH = 92;
+    var waterBlockH = 100;      // 96 + 间距
+    var exLabelH = 34;
+    var rowsH = 0;
+    groups.forEach(function(g){ rowsH += (g.type==="run" ? 44 : 34); });
+    var emptyH = groups.length ? 0 : 32;
+    var footerH = 48;
+    var H = pad + headH + waterBlockH + exLabelH + rowsH + emptyH + footerH + pad;
+
+    var cv = document.createElement("canvas");
+    cv.width = Math.round(W*S);
+    cv.height = Math.round(H*S);
+    var ctx = cv.getContext("2d");
+    ctx.scale(S,S);
+    ctx.textBaseline = "alphabetic";
+
+    // 卡片底
+    var bg = ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,"#ffffff");
+    bg.addColorStop(0.55,"#fbfdff");
+    bg.addColorStop(1,"#eef6ff");
+    roundRect(ctx,pad,pad,W-pad*2,H-pad*2,22);
+    ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.strokeStyle = "#e5eef9";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 顶部色条
+    ctx.save();
+    roundRect(ctx,pad,pad,W-pad*2,H-pad*2,22);
+    ctx.clip();
+    var topBar = ctx.createLinearGradient(pad,0,W-pad,0);
+    topBar.addColorStop(0,"#5aa9ff");
+    topBar.addColorStop(1,"#1f6dff");
+    ctx.fillStyle = topBar;
+    roundRect(ctx, pad+10, pad, W-pad*2-20, 4, 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 头像 + 昵称 + 日期
+    var cy = pad + 40;
+    ctx.beginPath();
+    ctx.arc(left+20, cy, 20, 0, Math.PI*2);
+    ctx.fillStyle = "#e9f3ff";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(31,109,255,.16)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = '20px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+    ctx.fillStyle = "#000";
+    ctx.fillText("🌱", left+20, cy+1);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+
+    // 品牌角标（先算宽度，避免和昵称重叠）
+    ctx.font = '700 11px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    var brand = "健康生活管理";
+    var tagW = ctx.measureText(brand).width + 18;
+    roundRect(ctx, right-tagW, cy-26, tagW, 20, 10);
+    ctx.fillStyle = "#eaf2ff";
+    ctx.fill();
+    ctx.fillStyle = "#1f6dff";
+    ctx.textAlign = "center";
+    ctx.fillText(brand, right - tagW/2, cy-12);
+    ctx.textAlign = "left";
+
+    var nickX = left + 50;
+    var nickMaxW = right - tagW - 12 - nickX;
+    ctx.font = '700 16px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#16223a";
+    ctx.fillText(fitText(ctx, state.nickname, nickMaxW), nickX, cy-2);
+
+    ctx.font = '11.5px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#8a97ab";
+    ctx.fillText(prettyDay(viewDay), nickX, cy+16);
+
+    // 饮水块
+    var wy = pad + headH;
+    roundRect(ctx, left, wy, right-left, 92, 16);
+    ctx.fillStyle = "#f3f8ff";
+    ctx.fill();
+
+    ctx.font = '11.5px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#7d8ca3";
+    ctx.fillText(cardToday ? "今日饮水" : "当日饮水", left+14, wy+22);
+
+    var pct = Math.round(waterTotal / GOAL * 100);
+    ctx.textAlign = "right";
+    ctx.font = '700 13px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#1f6dff";
+    ctx.fillText(pct+"%", right-14, wy+22);
+    ctx.textAlign = "left";
+
+    ctx.font = '800 27px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#1f6dff";
+    var big = String(waterTotal);
+    ctx.fillText(big, left+14, wy+54);
+    var bw = ctx.measureText(big).width;
+    ctx.font = '600 13px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#7d8ca3";
+    ctx.fillText(" / "+GOAL+" 毫升", left+14+bw, wy+54);
+
+    // 进度条
+    var barX = left+14, barY = wy+64, barW = (right-left)-28, barH = 9;
+    roundRect(ctx, barX, barY, barW, barH, 4.5);
+    ctx.fillStyle = "#dfeafb";
+    ctx.fill();
+    var ratio = Math.min(1, waterTotal/GOAL);
+    if(ratio > 0){
+      ctx.save();
+      roundRect(ctx, barX, barY, barW, barH, 4.5);
+      ctx.clip();
+      var g2 = ctx.createLinearGradient(barX,0,barX+barW,0);
+      g2.addColorStop(0,"#6fb4ff");
+      g2.addColorStop(1,"#1f6dff");
+      ctx.fillStyle = g2;
+      ctx.fillRect(barX, barY, barW*ratio, barH);
+      ctx.restore();
+    }
+
+    ctx.font = '11px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#7d8ca3";
+    var leftMl = Math.max(0, GOAL - waterTotal);
+    var leftTxt = leftMl === 0
+      ? (waterTotal>GOAL ? "目标已达成，超出 "+(waterTotal-GOAL)+" 毫升" : "目标已达成")
+      : "还差 "+leftMl+" 毫升";
+    ctx.fillText(leftTxt, barX, barY+28);
+
+    // 运动标题
+    var exY = wy + 92 + 26;
+    ctx.font = '11.5px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#7d8ca3";
+    ctx.fillText(cardToday ? "今日运动" : "当日运动", left, exY);
+    if(groups.length){
+      ctx.textAlign = "right";
+      ctx.fillText(groups.length+" 个项目", right, exY);
+      ctx.textAlign = "left";
+    }
+
+    var ry = exY + 16;
+    if(!groups.length){
+      ctx.font = '12.5px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillStyle = "#a8b4c6";
+      ctx.fillText(cardToday ? "今日暂无运动记录" : "暂无记录", left, ry+8);
+    }else{
+      groups.forEach(function(g){
+        // 圆点
+        ctx.beginPath();
+        ctx.arc(left+5, ry-4, 4.5, 0, Math.PI*2);
+        ctx.fillStyle = g.color;
+        ctx.fill();
+
+        ctx.font = '700 13px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+        ctx.fillStyle = "#16223a";
+        ctx.fillText(g.name, left+18, ry);
+
+        var detail = g.dist
+          ? fmtKm(g.km)+" 公里 · "+fmtMin(g.min)+" 分钟"
+          : fmtMin(g.min)+" 分钟";
+        ctx.textAlign = "right";
+        ctx.font = '11.5px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+        ctx.fillStyle = "#5b6b83";
+        ctx.fillText(detail, right, ry);
+        ctx.textAlign = "left";
+
+        if(g.type === "run"){
+          ctx.font = '11px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+          ctx.fillStyle = "#8a97ab";
+          ctx.fillText("平均配速 "+fmtPace(g.km,g.min)+"/公里", left+18, ry+15);
+          ry += 44;
+        }else{
+          ry += 34;
+        }
+      });
+    }
+
+    // 页脚
+    ctx.strokeStyle = "#e8eff8";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(left, H-pad-32);
+    ctx.lineTo(right, H-pad-32);
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.font = '10.5px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#9aa8bb";
+    ctx.fillText("健康生活管理 · 健康记录 · "+hhmm(Date.now())+" 生成", W/2, H-pad-14);
+
+    return cv;
+  }
+
+  function renderCard(){
+    var cv = drawCard();
+    lastCardUrl = cv.toDataURL("image/png");
+    elCardImg.src = lastCardUrl;
+  }
+
+  document.getElementById("makeCard").addEventListener("click", function(){
+    renderCard();
+    elCardBox.hidden = false;
+    elCardImg.scrollIntoView({behavior:"smooth", block:"center"});
+  });
+
+  document.getElementById("saveCard").addEventListener("click", function(){
+    if(!lastCardUrl) renderCard();
+    var name = "健康生活管理-"+viewDay+".png";
+    try{
+      var a = document.createElement("a");
+      a.href = lastCardUrl;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast("图片已保存到下载");
+    }catch(err){
+      toast("请长按上方图片保存");
+    }
+  });
+
+  /* ---------------- 提示 ---------------- */
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("on"); }, 1800);
+  }
+
+  /* ---------------- 日期控件（查看历史 / 补记） ---------------- */
+  var elDayPicker = document.getElementById("dayPicker");
+  var elDayHint   = document.getElementById("dayHint");
+  var elPrevDay   = document.getElementById("prevDay");
+  var elNextDay   = document.getElementById("nextDay");
+  var elBackToday = document.getElementById("backToday");
+  var elWaterHead = document.getElementById("waterHead");
+  var elExHead    = document.getElementById("exHead");
+  var elCardHead  = document.getElementById("cardHead");
+  var elMakeCard  = document.getElementById("makeCard");
+
+  function renderAll(){
+    var today = todayKey();
+    if(!pinned && viewDay !== today) viewDay = today;   // 没手动选日期时始终跟随今天
+    if(viewDay > today) viewDay = today;
+    var isT = (viewDay === today);
+
+    elWaterHead.textContent = isT ? "今日饮水" : shortDay(viewDay)+" 饮水";
+    elExHead.textContent    = isT ? "今日运动" : shortDay(viewDay)+" 运动";
+    elCardHead.textContent  = isT ? "今日记录卡" : shortDay(viewDay)+" 记录卡";
+    elMakeCard.textContent  = isT ? "生成今日记录卡" : "生成"+shortDay(viewDay)+"记录卡";
+    elToday.textContent     = shortDay(viewDay)+" "+weekdayOf(viewDay);
+    elDayPicker.value       = viewDay;
+    elDayPicker.max         = today;
+    elNextDay.disabled      = (viewDay >= today);
+    elBackToday.disabled    = isT;
+    elDayHint.textContent   = isT ? "新记录计入今天（北京时间）"
+                                  : "正在查看 "+shortDay(viewDay)+"，新记录计入这一天";
+    elDayHint.classList.toggle("on", !isT);
+
+    renderNick();
+    renderWater();
+    renderEx();
+  }
+
+  function pickDay(day){
+    if(!day) return;
+    var today = todayKey();
+    if(day > today) day = today;      // 不能选未来
+    viewDay = day;
+    pinned = (day !== today);
+    renderAll();
+    if(cardVisible()) renderCard();
+  }
+
+  elDayPicker.addEventListener("change", function(){ pickDay(elDayPicker.value); });
+  elDayPicker.addEventListener("input",  function(){ if(elDayPicker.value) pickDay(elDayPicker.value); });
+  elPrevDay.addEventListener("click",   function(){ pickDay(shiftDay(viewDay, -1)); });
+  elNextDay.addEventListener("click",   function(){ pickDay(shiftDay(viewDay,  1)); });
+  elBackToday.addEventListener("click", function(){ pickDay(todayKey()); });
+
+  /* ---------------- 初始化 ---------------- */
+  function init(){
+    renderNick();
+    buildChips();
+    setActive("run");
+    viewDay = todayKey();
+    pinned = false;
+    renderAll();
+    if(apiOk()){ pull(true); } else { setSync("err","云服务未配置：记录只保存在本机"); }
+    // 切回页面时自动拉一次，方便两个设备交替使用
+    document.addEventListener("visibilitychange", function(){
+      if(!document.hidden && apiOk()){ pull(false); }
+    });
+    // 跨天自动刷新（按北京时间判断）
+    setInterval(function(){
+      if(!pinned && viewDay !== todayKey()){
+        viewDay = todayKey();
+        renderAll();
+        if(cardVisible()) renderCard();
+      }
+    }, 30000);
+  }
+  init();
+})();
+</script>
+</body>
+</html>
