@@ -108,7 +108,26 @@
   .water-stats{flex:1;min-width:0}
   .water-total{font-size:32px;font-weight:800;color:var(--blue-deep);line-height:1.05;letter-spacing:-.02em}
   .water-total small{font-size:14px;font-weight:600;color:var(--blue);margin-left:3px}
-  .water-meta{margin-top:4px;font-size:12.5px;color:var(--muted)}
+  .water-meta{margin-top:4px;font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .water-meta b{color:#33415a;font-weight:700}
+  .goal-edit{
+    border:1px solid #d6e5ff;background:var(--blue-soft);color:var(--blue-deep);
+    font-family:inherit;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;cursor:pointer;
+  }
+  .goal-edit:active{background:#dfebff}
+  .goal-editor{display:flex;gap:6px;margin-top:6px;align-items:center}
+  .goal-editor[hidden]{display:none}
+  .goal-editor input{
+    flex:1;min-width:0;font-family:inherit;font-size:15px;color:var(--ink);
+    border:1px solid #d9e3f2;background:#f8fbff;border-radius:10px;padding:7px 10px;outline:none;
+  }
+  .goal-editor input:focus{border-color:var(--blue);background:#fff}
+  .water-custom{display:flex;gap:8px;margin-top:8px}
+  .water-custom input{
+    flex:1;min-width:0;font-family:inherit;font-size:15px;color:var(--ink);
+    border:1px solid #e0e8f4;background:#f8fbff;border-radius:12px;padding:10px 12px;outline:none;
+  }
+  .water-custom input:focus{border-color:var(--blue);background:#fff}
   .water-left{margin-top:2px;font-size:13px;color:#5b6b83}
   .water-left b{color:var(--blue-deep);font-weight:700}
   .btn-water{
@@ -263,7 +282,7 @@
   <header class="topbar">
     <div class="avatar" aria-hidden="true">🌱</div>
     <div class="ident">
-      <div class="brand">健康生活管理<span class="badge-ver">v0.2B 云同步</span></div>
+      <div class="brand">健康生活管理<span class="badge-ver">v0.3 云同步</span></div>
       <div class="name-row">
         <span class="nickname" id="nickName">健康记录员</span>
         <button class="edit-btn" id="editBtn" type="button">✎ 编辑昵称</button>
@@ -326,11 +345,23 @@
       </div>
       <div class="water-stats">
         <div class="water-total"><span id="waterTotal">0</span><small>毫升</small></div>
-        <div class="water-meta">目标 2000 毫升 · 每杯 250 毫升</div>
+        <div class="water-meta">
+          <span>目标 <b id="goalVal">2000</b> 毫升</span>
+          <button class="goal-edit" id="editGoal" type="button">改</button>
+        </div>
+        <div class="goal-editor" id="goalEditor" hidden>
+          <input id="goalInput" type="number" inputmode="numeric" min="100" max="5000" step="1" placeholder="100–5000">
+          <button class="btn-mini" id="goalSave" type="button">保存</button>
+          <button class="btn-mini ghost" id="goalCancel" type="button">取消</button>
+        </div>
         <div class="water-left" id="waterLeftBox">还差 <b id="waterLeft">2000</b> 毫升</div>
       </div>
     </div>
     <button class="btn-water" id="addWater" type="button">💧 喝一杯，记录 250 毫升</button>
+    <div class="water-custom">
+      <input id="inMl" type="number" inputmode="numeric" min="1" max="2000" step="1" placeholder="自己填水量，1–2000 毫升">
+      <button class="btn-add" id="addCustomWater" type="button">记录</button>
+    </div>
     <ul class="rec-list" id="waterList"></ul>
   </section>
 
@@ -373,8 +404,10 @@
 (function(){
   "use strict";
 
-  var GOAL = 2000;
-  var CUP = 250;
+  var GOAL = 2000;                       // 兜底目标：这一天没有任何目标记录时按它算（F3）
+  var GOAL_MIN = 100, GOAL_MAX = 5000;   // 目标允许范围（F6）
+  var CUP = 250;                         // +250 快捷按钮（F5）
+  var ML_MIN = 1, ML_MAX = 2000;         // 自填水量的允许范围（F6）
   var KEY = "health_cloud_v1";          // v0.2B 独立缓存键，与 v0.2A 的 health_daily_v1 互不影响
   var CIRC = 2 * Math.PI * 52;
 
@@ -404,9 +437,25 @@
   /* ---------------- 状态：本地缓存 + 云端文档 ---------------- */
   function defaults(){
     return { nickname:"健康记录员", nicknameUpdatedAt:0, water:[], ex:[],
+             goals:{}, goalTimes:{},
              tomb:{water:[], ex:[]}, rev:0, updatedAt:0, pending:false };
   }
   var state = load();
+
+  // 每天的目标：{ "2026-11-13": 2000 }，配一份修改时间用于合并
+  function normGoals(g, t){
+    var goals = {}, times = {};
+    if(g && typeof g === "object"){
+      for(var d in g){
+        if(!Object.prototype.hasOwnProperty.call(g, d)) continue;
+        var v = Number(g[d]);
+        if(!isFinite(v) || Math.floor(v) !== v || v < GOAL_MIN || v > GOAL_MAX) continue;
+        goals[d] = v;
+        times[d] = Number((t||{})[d]) || 0;
+      }
+    }
+    return { goals: goals, goalTimes: times };
+  }
 
   function normTomb(t){
     t = (t && typeof t==="object") ? t : {};
@@ -418,11 +467,14 @@
       if(!raw) return defaults();
       var d = JSON.parse(raw);
       if(!d || typeof d!=="object") return defaults();
+      var g = normGoals(d.goals, d.goalTimes);
       return {
         nickname: (typeof d.nickname==="string" && d.nickname.trim()) ? d.nickname.trim().slice(0,12) : "健康记录员",
         nicknameUpdatedAt: Number(d.nicknameUpdatedAt)||0,
         water: Array.isArray(d.water) ? d.water.filter(function(w){ return w && w.id && w.ts && typeof w.ml==="number"; }) : [],
         ex:    Array.isArray(d.ex)    ? d.ex.filter(function(e){ return e && e.id && e.ts && e.type; }) : [],
+        goals: g.goals,
+        goalTimes: g.goalTimes,
         tomb: normTomb(d.tomb),
         rev: Number(d.rev)||0,
         updatedAt: Number(d.updatedAt)||0,
@@ -472,13 +524,28 @@
       water: Object.keys(tomb.water).map(function(id){ return {id:id, ts:tomb.water[id]}; }),
       ex:    Object.keys(tomb.ex).map(function(id){ return {id:id, ts:tomb.ex[id]}; })
     };
+    // 每天的目标：同一日期取"改得较晚"的那一个（F1、F4 的合并规则）
+    var gMap = {}, gTime = {};
+    function mergeGoals(doc){
+      var g = (doc && doc.goals) || {}, t = (doc && doc.goalTimes) || {};
+      Object.keys(g).forEach(function(d){
+        var ts = Number(t[d])||0;
+        if(gTime[d] === undefined || ts > gTime[d]){ gMap[d] = Number(g[d]); gTime[d] = ts; }
+      });
+    }
+    mergeGoals(a); mergeGoals(b);
+    out.goals = gMap;
+    out.goalTimes = gTime;
+
     out.updatedAt = Math.max(Number(a.updatedAt)||0, Number(b.updatedAt)||0);
     out.rev = Math.max(Number(a.rev)||0, Number(b.rev)||0);
     return out;
   }
   function docOf(s){
     return { nickname:s.nickname, nicknameUpdatedAt:s.nicknameUpdatedAt,
-             water:s.water, ex:s.ex, tomb:s.tomb, updatedAt:s.updatedAt };
+             water:s.water, ex:s.ex, tomb:s.tomb,
+             goals:s.goals, goalTimes:s.goalTimes,
+             updatedAt:s.updatedAt };
   }
 
   /* ---------------- 云同步：读 / 写 / 重试 ---------------- */
@@ -755,6 +822,28 @@
   var pinned  = false;        // 用户是否手动选了过去某一天
   function isTodayView(){ return viewDay === todayKey(); }
 
+  /* ---------------- 每天的目标（F1–F4） ---------------- */
+  // 这一天的目标：当天设过就用当天的；没设过就沿用"这一天之前最近一次设置过的"；都没有按 2000
+  function goalOf(day){
+    if(state.goals && Object.prototype.hasOwnProperty.call(state.goals, day)){
+      return Number(state.goals[day]) || GOAL;
+    }
+    var best = "";
+    if(state.goals){
+      Object.keys(state.goals).forEach(function(d){
+        if(d < day && d > best) best = d;
+      });
+    }
+    if(best) return Number(state.goals[best]) || GOAL;
+    return GOAL;
+  }
+  function setGoalForDay(day, val){
+    state.goals = state.goals || {};
+    state.goalTimes = state.goalTimes || {};
+    state.goals[day] = val;
+    state.goalTimes[day] = Date.now();
+  }
+
   /* ---------------- 渲染：顶部身份 ---------------- */
   var elNick   = document.getElementById("nickName");
   var elEdit   = document.getElementById("editBtn");
@@ -795,25 +884,30 @@
   var elRingFg     = document.getElementById("ringFg");
   var elWaterList  = document.getElementById("waterList");
   var elToday      = document.getElementById("todayLabel");
+  var elGoalVal    = document.getElementById("goalVal");
+  var elGoalEditor = document.getElementById("goalEditor");
+  var elGoalInput  = document.getElementById("goalInput");
+  var elInMl       = document.getElementById("inMl");
 
   function renderWater(){
     var list = waterOf(viewDay);
     var total = list.reduce(function(s,w){ return s + (Number(w.ml)||0); }, 0);
-    var ratio = Math.min(1, total / GOAL);
-    var pct = GOAL>0 ? Math.round(total / GOAL * 100) : 0;
+    var goal = goalOf(viewDay);
+    var ratio = Math.min(1, total / goal);
+    var pct = goal>0 ? Math.round(total / goal * 100) : 0;
 
     elWaterTotal.textContent = total;
+    if(elGoalVal) elGoalVal.textContent = goal;
     elRingPct.textContent = pct + "%";
     elRingFg.setAttribute("stroke-dasharray", CIRC.toFixed(2));
     elRingFg.setAttribute("stroke-dashoffset", (CIRC * (1-ratio)).toFixed(2));
 
-    var left = Math.max(0, GOAL - total);
-    if(left === 0){
-      elWaterLeft.innerHTML = total>GOAL
-        ? "目标已达成 · 超出 <b>"+(total-GOAL)+"</b> 毫升 🎉"
-        : "目标已达成 🎉 "+(isTodayView() ? "今日达标" : "当日达标");
+    if(total >= goal){
+      elWaterLeft.innerHTML = total > goal
+        ? "已超出 <b>"+(total-goal)+"</b> 毫升"
+        : "目标已达成 🎉";
     }else{
-      elWaterLeft.innerHTML = "还差 <b>"+left+"</b> 毫升";
+      elWaterLeft.innerHTML = "还差 <b>"+(goal-total)+"</b> 毫升";
     }
 
     elWaterList.innerHTML = "";
@@ -843,6 +937,49 @@
     if(!pinned) viewDay = todayKey();
     state.water.push({id:uid(), ts:tsForDay(viewDay), day:viewDay, ml:CUP, updatedAt:Date.now()});
     commit(isTodayView() ? "已保存到云端 · 饮水 +250 毫升" : ("已保存到云端 · 记入 "+shortDay(viewDay)));
+  });
+
+  // 改当天目标：只改设置，不产生记录（F7）
+  document.getElementById("editGoal").addEventListener("click", function(){
+    elGoalEditor.hidden = false;
+    elGoalInput.value = goalOf(viewDay);
+    elGoalInput.focus();
+    elGoalInput.select();
+  });
+  document.getElementById("goalCancel").addEventListener("click", function(){
+    elGoalEditor.hidden = true;
+  });
+  document.getElementById("goalSave").addEventListener("click", function(){
+    var raw = elGoalInput.value;
+    var v = Number(raw);
+    if(raw.trim() === "" || !isFinite(v) || Math.floor(v) !== v || v < GOAL_MIN || v > GOAL_MAX){
+      toast("目标只收 " + GOAL_MIN + "–" + GOAL_MAX + " 之间的整数，没有保存");
+      return;
+    }
+    elGoalEditor.hidden = true;
+    setGoalForDay(viewDay, v);
+    commit("目标已保存到云端 · " + v + " 毫升");
+  });
+  elGoalInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); document.getElementById("goalSave").click(); }
+  });
+
+  // 自填水量（F5、F6）
+  document.getElementById("addCustomWater").addEventListener("click", function(){
+    var raw = elInMl.value;
+    var v = Number(raw);
+    if(raw.trim() === "" || !isFinite(v) || Math.floor(v) !== v || v < ML_MIN || v > ML_MAX){
+      toast("水量只收 " + ML_MIN + "–" + ML_MAX + " 之间的整数，没有保存");
+      return;
+    }
+    if(!pinned) viewDay = todayKey();
+    state.water.push({id:uid(), ts:tsForDay(viewDay), day:viewDay, ml:v, updatedAt:Date.now()});
+    elInMl.value = "";
+    commit(isTodayView() ? ("已保存到云端 · 饮水 +" + v + " 毫升")
+                         : ("已保存到云端 · 记入 " + shortDay(viewDay) + " " + v + " 毫升"));
+  });
+  elInMl.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){ e.preventDefault(); document.getElementById("addCustomWater").click(); }
   });
 
   /* ---------------- 渲染：运动 ---------------- */
@@ -1080,7 +1217,8 @@
     ctx.fillStyle = "#7d8ca3";
     ctx.fillText(cardToday ? "今日饮水" : "当日饮水", left+14, wy+22);
 
-    var pct = Math.round(waterTotal / GOAL * 100);
+    var cardGoal = goalOf(viewDay);
+    var pct = Math.round(waterTotal / cardGoal * 100);
     ctx.textAlign = "right";
     ctx.font = '700 13px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
     ctx.fillStyle = "#1f6dff";
@@ -1094,14 +1232,14 @@
     var bw = ctx.measureText(big).width;
     ctx.font = '600 13px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
     ctx.fillStyle = "#7d8ca3";
-    ctx.fillText(" / "+GOAL+" 毫升", left+14+bw, wy+54);
+    ctx.fillText(" / "+cardGoal+" 毫升", left+14+bw, wy+54);
 
     // 进度条
     var barX = left+14, barY = wy+64, barW = (right-left)-28, barH = 9;
     roundRect(ctx, barX, barY, barW, barH, 4.5);
     ctx.fillStyle = "#dfeafb";
     ctx.fill();
-    var ratio = Math.min(1, waterTotal/GOAL);
+    var ratio = Math.min(1, waterTotal/cardGoal);
     if(ratio > 0){
       ctx.save();
       roundRect(ctx, barX, barY, barW, barH, 4.5);
@@ -1116,10 +1254,9 @@
 
     ctx.font = '11px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
     ctx.fillStyle = "#7d8ca3";
-    var leftMl = Math.max(0, GOAL - waterTotal);
-    var leftTxt = leftMl === 0
-      ? (waterTotal>GOAL ? "目标已达成，超出 "+(waterTotal-GOAL)+" 毫升" : "目标已达成")
-      : "还差 "+leftMl+" 毫升";
+    var diffMl = cardGoal - waterTotal;
+    var leftTxt = diffMl > 0 ? ("还差 " + diffMl + " 毫升")
+                : (diffMl === 0 ? "目标已达成" : ("已超出 " + (-diffMl) + " 毫升"));
     ctx.fillText(leftTxt, barX, barY+28);
 
     // 运动标题
