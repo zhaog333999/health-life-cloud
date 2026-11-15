@@ -205,6 +205,43 @@
   #cardImg{width:100%;display:block;border-radius:16px;box-shadow:0 10px 26px rgba(30,60,110,.13)}
   .share-actions{display:flex;align-items:center;gap:10px;margin-top:12px}
   .share-actions .btn-primary{flex:1;width:auto}
+
+  /* ---------- 记录 / 统计 切换 ---------- */
+  .viewtabs{display:flex;gap:8px;margin:0 0 12px}
+  .vtab{flex:1;padding:10px 0;border:1px solid var(--line,#e3e9f2);background:#fff;color:#5b6b83;
+        border-radius:12px;font-size:14px;font-family:inherit;cursor:pointer}
+  .vtab.active{background:#2f80ff;border-color:#2f80ff;color:#fff;font-weight:600}
+  body.stats-mode .datebar,body.stats-mode .card:not(#statsView){display:none}
+  #statsView[hidden]{display:none}
+  .stats-notice{margin:2px 0 10px;padding:9px 12px;border-radius:10px;background:#f2f6fc;color:#42536d;font-size:12.5px;line-height:1.5}
+  .stats-notice.err{background:#fff1f0;color:#a12a1f;border:1px solid #ffd2ce}
+  .stats-notice button{margin-left:8px;padding:5px 12px;border:1px solid #f0b4ad;background:#fff;color:#a12a1f;border-radius:8px;font-size:12px;font-family:inherit;cursor:pointer}
+  .stats-summary{display:flex;gap:10px;margin:4px 0 10px;font-size:13px;color:#3c4c66}
+  .stats-summary .k{background:#f2f6fc;border-radius:10px;padding:6px 10px}
+  .stats-summary .k b{color:#1f6dff;font-size:15px}
+  .chart-block{margin-top:6px}
+  .chart-title{font-size:13px;color:#3c4c66;font-weight:600;margin-bottom:4px}
+  .chart-legend{font-weight:400;font-size:11px;color:#8a97ab;margin-left:8px}
+  .chart-svg svg{width:100%;height:auto;display:block}
+  .chart-svg .bar{fill:#2f80ff;opacity:.85}
+  .chart-svg .bar.today{fill:#1f6dff;opacity:1}
+  .chart-svg .goal-tick{stroke:#f0a52a;stroke-width:1.5;stroke-dasharray:3 2}
+  .chart-svg .goal-label{fill:#b27712;font-size:8px}
+  .chart-svg .bar-value{fill:#33435c;font-size:9px;font-weight:600}
+  .chart-svg .x-label{fill:#7b8aa3;font-size:9px}
+  .chart-svg .x-label.today{fill:#1f6dff;font-weight:700}
+  .chart-svg .done-check{fill:#22a05a;font-size:10px;font-weight:700}
+  .chart-svg .baseline{stroke:#dde5f0;stroke-width:1}
+  .chart-svg .ex-seg{opacity:.92}
+  .chart-svg .ex-total{fill:#33435c;font-size:9px;font-weight:600}
+  .ex-table-wrap{margin-top:8px}
+  .ex-table{width:100%;border-collapse:collapse;font-size:12px;color:#3c4c66}
+  .ex-table th,.ex-table td{padding:6px 4px;border-bottom:1px solid #eef2f8;text-align:right}
+  .ex-table th:first-child,.ex-table td:first-child{text-align:left}
+  .ex-table th{color:#8a97ab;font-weight:500;font-size:11px}
+  .ex-table .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+  .ex-empty{font-size:12px;color:#8a97ab;padding:8px 0}
+  .chart-svg .grid{stroke:#eef2f8;stroke-width:1}
   .share-hint{font-size:11.5px;color:var(--muted);line-height:1.3;flex:0 0 auto;max-width:110px}
   .toast{
     position:fixed;left:50%;bottom:32px;transform:translate(-50%,10px);
@@ -282,7 +319,7 @@
   <header class="topbar">
     <div class="avatar" aria-hidden="true">🌱</div>
     <div class="ident">
-      <div class="brand">健康生活管理<span class="badge-ver">v0.3 云同步</span></div>
+      <div class="brand">健康生活管理<span class="badge-ver">v0.4 云同步</span></div>
       <div class="name-row">
         <span class="nickname" id="nickName">健康记录员</span>
         <button class="edit-btn" id="editBtn" type="button">✎ 编辑昵称</button>
@@ -307,6 +344,12 @@
     <span class="sync-text" id="syncText">正在连接云服务…</span>
     <button class="refreshbtn" id="refreshBtn" type="button">刷新记录</button>
   </section>
+
+  <!-- 记录 / 统计 切换 -->
+  <nav class="viewtabs" role="tablist">
+    <button class="vtab active" data-view="record" type="button" role="tab">记录</button>
+    <button class="vtab" data-view="stats" type="button" role="tab">统计</button>
+  </nav>
 
   <!-- 日期选择：查看历史 / 补记 -->
   <section class="datebar">
@@ -378,6 +421,25 @@
       <button class="btn-add" id="addEx" type="button">保存记录</button>
     </div>
     <div id="exSummary"></div>
+  </section>
+
+  <!-- 统计（只读） -->
+  <section class="card stats" id="statsView" hidden>
+    <div class="sec-head">
+      <h2>最近 7 天</h2>
+      <span class="hint-txt" id="statsRange"></span>
+    </div>
+    <div class="stats-notice" id="statsNotice" hidden></div>
+    <div class="stats-summary" id="statsSummary"></div>
+    <div class="chart-block">
+      <div class="chart-title">每天饮水量<span class="chart-legend">刻度＝当天目标 · ✓＝达标</span></div>
+      <div id="waterChart" class="chart-svg"></div>
+    </div>
+    <div class="chart-block">
+      <div class="chart-title">每天运动时长<span class="chart-legend">颜色＝运动项目 · 单位：分钟</span></div>
+      <div id="exChart" class="chart-svg"></div>
+      <div id="exTable" class="ex-table-wrap"></div>
+    </div>
   </section>
 
   <!-- 今日记录卡 -->
@@ -554,7 +616,10 @@
   var elSyncText = document.getElementById("syncText");
   var elRefresh = document.getElementById("refreshBtn");
 
+  var lastSyncErr = "";
   function setSync(kind, text){
+    if(kind === "err") lastSyncErr = text || "读取失败";
+    else if(kind === "ok") lastSyncErr = "";
     if(elSyncDot)  elSyncDot.className = "sync-dot" + (kind==="ok"?" ok":kind==="err"?" err":kind==="busy"?" busy":"");
     if(elSyncText){ elSyncText.className = "sync-text" + (kind==="err"?" err":""); elSyncText.textContent = text; }
   }
@@ -705,9 +770,11 @@
       cacheLocal();
       renderAll(); if(cardVisible()) renderCard();
       setSync("ok", "已刷新 · " + hhmm(Date.now()) + (hadPending ? "（本机还有未保存到云端的改动）" : ""));
+      if(viewMode === "stats") renderStats();
       return true;
     }catch(err){
       setSync("err", "刷新失败：" + friendlyErr(err) + "。当前显示本机缓存");
+      if(viewMode === "stats") renderStats();
       return false;
     }finally{
       if(elRefresh) elRefresh.disabled = false;
@@ -843,6 +910,227 @@
     state.goals[day] = val;
     state.goalTimes[day] = Date.now();
   }
+
+  /* ---------------- 最近 N 天统计（F1–F5、F13） ---------------- */
+  // 纯函数：只看当前 state，不改任何数据；每次调用都从现在的数据重算，不缓存（F13）
+  var STATS_DAYS = 7;
+  function computeStats(days){
+    days = days || STATS_DAYS;
+    var today = todayKey();
+    var range = [];
+    for(var i = days - 1; i >= 0; i--) range.push(shiftDay(today, -i));
+
+    var out = { today: today, from: range[0], to: range[range.length-1],
+                days: [], doneDays: 0, activeDays: 0 };
+
+    range.forEach(function(day){
+      var ml = 0, exMin = 0, exCount = 0, exByType = {};
+      state.water.forEach(function(w){ if(recDay(w) === day) ml += Number(w.ml) || 0; });
+      state.ex.forEach(function(e){
+        if(recDay(e) !== day) return;
+        exCount++;
+        var m = Number(e.min) || 0;
+        exMin += m;
+        var t = exByType[e.type] || (exByType[e.type] = {min:0, km:0, count:0});
+        t.min += m;
+        t.km += Number(e.km) || 0;
+        t.count++;
+      });
+      var goal = goalOf(day);
+      // F3：达标用原始数值比较，不看四舍五入后的百分比
+      var done = goal > 0 && ml >= goal;
+      var pct = goal > 0 ? Math.round(ml / goal * 100) : 0;
+      if(done) out.doneDays++;
+      if(exCount > 0) out.activeDays++;
+      out.days.push({ day: day, ml: ml, goal: goal, pct: pct, done: done,
+                      exMin: exMin, exByType: exByType, exCount: exCount });
+    });
+    return out;
+  }
+  window.__computeStats = computeStats;   // 仅用于验收，不影响界面
+
+  /* ---------------- 统计：饮水柱状图（F6、F9、F11） ---------------- */
+  function buildWaterChart(s){
+    var W = 340, H = 196, padL = 6, padR = 6, top = 30, bottom = 40;
+    var plotW = W - padL - padR, plotH = H - top - bottom, baseY = top + plotH;
+    var maxMl = 0, maxGoal = 0;
+    s.days.forEach(function(d){ if(d.ml > maxMl) maxMl = d.ml; if(d.goal > maxGoal) maxGoal = d.goal; });
+    // F9：纵轴上限覆盖「最大目标」与「最大实际」里较大的那个，再留 15%，目标刻度不会被裁掉
+    var maxVal = Math.max(maxMl, maxGoal, 1) * 1.15;
+    var slot = plotW / s.days.length, barW = Math.min(slot * 0.5, 22);
+    var p = [], prevGoal = null;
+    p.push('<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="最近7天饮水量">');
+    [0, 0.5, 1].forEach(function(r){
+      var y = (baseY - plotH * r).toFixed(1);
+      p.push('<line class="' + (r === 0 ? 'baseline' : 'grid') + '" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '"/>');
+    });
+    s.days.forEach(function(d, i){
+      var cx = padL + slot * (i + 0.5), x = cx - barW / 2;
+      var h = d.ml > 0 ? Math.max(2, d.ml / maxVal * plotH) : 0;
+      var y = baseY - h, isToday = (d.day === s.today);
+      p.push('<rect class="bar' + (isToday ? ' today' : '') + '" data-day="' + d.day + '" data-ml="' + d.ml + '" data-goal="' + d.goal +
+             '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) + '" height="' + h.toFixed(1) + '" rx="3"/>');
+      p.push('<text class="bar-value" x="' + cx.toFixed(1) + '" y="' + (y - 4).toFixed(1) + '" text-anchor="middle"' +
+             (d.ml > 0 ? '' : ' opacity=".45"') + '>' + d.ml + '</text>');
+      var gy = baseY - d.goal / maxVal * plotH;
+      p.push('<line class="goal-tick" data-day="' + d.day + '" data-goal="' + d.goal + '" data-y="' + gy.toFixed(1) +
+             '" x1="' + (cx - barW/2).toFixed(1) + '" x2="' + (cx + barW/2).toFixed(1) +
+             '" y1="' + gy.toFixed(1) + '" y2="' + gy.toFixed(1) + '"/>');
+      // 目标数字只在「第一天 / 目标变了 / 今天」标一次，避免 7 个相同的 2000 糊成一片
+      if(i === 0 || d.goal !== prevGoal || isToday){
+        var lx = Math.min(cx + barW/2 + 4, W - padR - 18);
+        p.push('<text class="goal-label" data-day="' + d.day + '" x="' + lx.toFixed(1) + '" y="' + (gy - 2).toFixed(1) + '">' + d.goal + '</text>');
+      }
+      prevGoal = d.goal;
+      if(d.done){
+        p.push('<text class="done-check" data-day="' + d.day + '" x="' + cx.toFixed(1) + '" y="' + (y - 15).toFixed(1) + '" text-anchor="middle">✓</text>');
+      }
+      p.push('<text class="x-label' + (isToday ? ' today' : '') + '" x="' + cx.toFixed(1) + '" y="' + (baseY + 14) + '" text-anchor="middle">' +
+             d.day.slice(5).replace('-', '/') + '</text>');
+      if(isToday){
+        p.push('<text class="x-label today" x="' + cx.toFixed(1) + '" y="' + (baseY + 26) + '" text-anchor="middle" font-size="8">进行中</text>');
+      }
+    });
+    p.push('</svg>');
+    return p.join('');
+  }
+
+
+  /* ---------------- 统计：运动堆叠柱 + 分项表（F5、F10） ---------------- */
+  function buildExerciseChart(s){
+    var W = 340, H = 176, padL = 6, padR = 6, top = 26, bottom = 40;
+    var plotW = W - padL - padR, plotH = H - top - bottom, baseY = top + plotH;
+    var maxTot = 0;
+    s.days.forEach(function(d){ if(d.exMin > maxTot) maxTot = d.exMin; });
+    var maxVal = Math.max(maxTot, 1) * 1.15;
+    var slot = plotW / s.days.length, barW = Math.min(slot * 0.5, 22);
+    var p = ['<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="最近7天运动时长">'];
+    [0, 0.5, 1].forEach(function(r){
+      var y = (baseY - plotH * r).toFixed(1);
+      p.push('<line class="' + (r === 0 ? 'baseline' : 'grid') + '" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '"/>');
+    });
+    s.days.forEach(function(d, i){
+      var cx = padL + slot * (i + 0.5), x = cx - barW / 2, isToday = (d.day === s.today);
+      var acc = 0;
+      TYPES.forEach(function(t){
+        var part = d.exByType[t.id];
+        if(!part || !part.min) return;
+        var h = part.min / maxVal * plotH;
+        var y = baseY - acc - h;
+        p.push('<rect class="ex-seg" data-day="' + d.day + '" data-type="' + t.id + '" data-min="' + part.min +
+               '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barW.toFixed(1) +
+               '" height="' + h.toFixed(1) + '" fill="' + t.color + '"/>');
+        acc += h;
+      });
+      if(d.exMin > 0){
+        p.push('<text class="ex-total" data-day="' + d.day + '" x="' + cx.toFixed(1) + '" y="' + (baseY - acc - 4).toFixed(1) +
+               '" text-anchor="middle">' + d.exMin + '</text>');
+      } else {
+        p.push('<text class="ex-total" x="' + cx.toFixed(1) + '" y="' + (baseY - 4).toFixed(1) +
+               '" text-anchor="middle" opacity=".45">0</text>');
+      }
+      p.push('<text class="x-label' + (isToday ? ' today' : '') + '" x="' + cx.toFixed(1) + '" y="' + (baseY + 14) +
+             '" text-anchor="middle">' + d.day.slice(5).replace('-', '/') + '</text>');
+      if(isToday){
+        p.push('<text class="x-label today" x="' + cx.toFixed(1) + '" y="' + (baseY + 26) + '" text-anchor="middle" font-size="8">进行中</text>');
+      }
+    });
+    p.push('</svg>');
+    return p.join('');
+  }
+
+  // 7 天按项目汇总：时长可以相加，距离按项目分开（F5）
+  function buildExerciseTable(s){
+    var agg = {};
+    s.days.forEach(function(d){
+      Object.keys(d.exByType).forEach(function(tid){
+        var part = d.exByType[tid];
+        var a = agg[tid] || (agg[tid] = {min:0, km:0, days:0});
+        a.min += part.min; a.km += part.km; a.days++;
+      });
+    });
+    var rows = TYPES.filter(function(t){ return agg[t.id]; });
+    if(!rows.length) return '<div class="ex-empty">最近 7 天暂无运动记录</div>';
+    var html = ['<table class="ex-table"><thead><tr><th>项目</th><th>时长（分钟）</th><th>距离（公里）</th><th>天数</th></tr></thead><tbody>'];
+    rows.forEach(function(t){
+      var a = agg[t.id];
+      html.push('<tr data-type="' + t.id + '"><td><span class="dot" style="background:' + t.color + '"></span>' + t.name + '</td>' +
+                '<td data-min="' + a.min + '">' + a.min + '</td>' +
+                '<td data-km="' + a.km.toFixed(2) + '">' + (t.dist ? trimNum(a.km, 2) : '—') + '</td>' +
+                '<td data-days="' + a.days + '">' + a.days + '</td></tr>');
+    });
+    html.push('</tbody></table>');
+    return html.join('');
+  }
+
+
+
+  // 统计页的状态提示：读失败 → 红色提示 + 重试（F7）；7 天全空 → 一句提示（F6）
+  function renderStatsNotice(s){
+    var el = document.getElementById('statsNotice');
+    if(!el) return;
+    if(lastSyncErr){
+      el.hidden = false;
+      el.className = 'stats-notice err';
+      el.innerHTML = '<span>统计数据可能不是最新的：' + String(lastSyncErr).replace(/</g, '&lt;') + '</span>' +
+                     '<button type="button" id="statsRetry">重试</button>';
+      var btn = document.getElementById('statsRetry');
+      if(btn) btn.addEventListener('click', function(){ pull(true); setTimeout(renderStats, 1200); });
+      // 读失败时不能把 0 当成真实数据展示
+      ['waterChart','exChart','exTable'].forEach(function(id){
+        var box = document.getElementById(id); if(box) box.innerHTML = '';
+      });
+      var sum = document.getElementById('statsSummary'); if(sum) sum.innerHTML = '';
+      return;
+    }
+    var empty = s.days.every(function(d){ return d.ml === 0 && d.exMin === 0; });
+    if(empty){
+      el.hidden = false;
+      el.className = 'stats-notice';
+      el.innerHTML = '最近 7 天暂无记录，去「记录」页记一次，这里就会出图。';
+    } else {
+      el.hidden = true; el.className = 'stats-notice'; el.innerHTML = '';
+    }
+  }
+  window.__renderStatsNotice = renderStatsNotice;
+
+  // 顶部汇总：固定两项（F18），数字与 computeStats 同源，不另算一套
+  function renderSummary(s){
+    var el = document.getElementById('statsSummary');
+    if(!el) return;
+    el.innerHTML = '<span class="k">达标 <b data-k="done" data-v="' + s.doneDays + '">' + s.doneDays + '</b> 天</span>' +
+                   '<span class="k">有运动 <b data-k="active" data-v="' + s.activeDays + '">' + s.activeDays + '</b> 天</span>';
+  }
+
+  function renderStats(){
+    var s = computeStats(STATS_DAYS);
+    var rng = document.getElementById('statsRange');
+    if(rng) rng.textContent = s.from + ' ~ ' + s.to;
+    renderSummary(s);
+    var box = document.getElementById('waterChart');
+    if(box) box.innerHTML = buildWaterChart(s);
+    var exBox = document.getElementById('exChart');
+    if(exBox) exBox.innerHTML = buildExerciseChart(s);
+    var tb = document.getElementById('exTable');
+    if(tb) tb.innerHTML = buildExerciseTable(s);
+    renderStatsNotice(s);   // 放最后：读失败时由它清空图表，避免把 0 当真实数据显示
+    return s;
+  }
+  window.__renderStats = renderStats;
+
+  var viewMode = 'record';
+  function setView(v){
+    viewMode = v;
+    document.body.classList.toggle('stats-mode', v === 'stats');
+    var sv = document.getElementById('statsView');
+    if(sv) sv.hidden = (v !== 'stats');
+    for(var i = 0; i < document.querySelectorAll('.vtab').length; i++){
+      var b = document.querySelectorAll('.vtab')[i];
+      b.classList.toggle('active', b.getAttribute('data-view') === v);
+    }
+    if(v === 'stats') renderStats();
+  }
+  window.__setView = setView;
 
   /* ---------------- 渲染：顶部身份 ---------------- */
   var elNick   = document.getElementById("nickName");
@@ -1410,7 +1698,12 @@
   elDayPicker.addEventListener("input",  function(){ if(elDayPicker.value) pickDay(elDayPicker.value); });
   elPrevDay.addEventListener("click",   function(){ pickDay(shiftDay(viewDay, -1)); });
   elNextDay.addEventListener("click",   function(){ pickDay(shiftDay(viewDay,  1)); });
-  elBackToday.addEventListener("click", function(){ pickDay(todayKey()); });
+  elBackToday.addEventListener("click",   function(){ pickDay(todayKey()); });
+  for(var vi = 0; vi < document.querySelectorAll('.vtab').length; vi++){
+    document.querySelectorAll('.vtab')[vi].addEventListener('click', function(){
+      setView(this.getAttribute('data-view'));
+    });
+  }
 
   /* ---------------- 初始化 ---------------- */
   function init(){
